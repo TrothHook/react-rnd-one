@@ -5,6 +5,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResponseService } from 'src/common-service/response.service';
 import { User } from 'src/models/UserMasters.entity';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class UserService {
@@ -13,18 +14,23 @@ export class UserService {
   /**
    * User Registration
    * @author Barun Roy
-   * @param req 
-   * @param res 
+   * @param req
+   * @param res
    * @returns message
    */
 
   async createUser(req: Request, res: Response) {
     try {
+      let user_name: any = req.body?.name.toLowerCase().split(' ').join('_');
+
+      let hashedPassword: any = await bcrypt.hash(req.body?.password, 12);
+
       let duplicateCheck: any = await User.findOne({
         attributes: ['email'],
-        where: { email: req.body?.email },
+        where: {
+          [Op.or]: [{ email: req.body?.email }, { name: req.body?.name }],
+        },
       });
-      // console.log('duplicateCheck', JSON.parse(JSON.stringify(duplicateCheck)));
       if (duplicateCheck) {
         return this.resposneService.sent(
           res,
@@ -34,9 +40,14 @@ export class UserService {
         );
       }
 
-      let user_name: any = req.body?.name.toLowerCase().split(" ").join("_")
-
-      let hashedPassword: any = await bcrypt.hash(req.body?.password, 12);
+      if (!req.body?.name || !req.body?.email || !req.body?.password) {
+        return this.resposneService.sent(
+          res,
+          400,
+          [],
+          'Fields cannot be empty',
+        );
+      }
 
       await User.create({
         name: req.body?.name,
