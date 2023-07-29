@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "react-feather";
 import authService from "@/services/auth.service";
 import { toast, ToastContainer } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
+import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 
@@ -23,7 +23,10 @@ function register() {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    username: "",
+    password: "",
+  });
 
   const handleToggleShowPassword = () => {
     setShowPassword((prevShowPassword) => !prevShowPassword);
@@ -60,6 +63,9 @@ function register() {
                     id="username"
                     placeholder="Username"
                     type="text"
+                    onChange={(val) => {
+                      field.onChange(val);
+                    }}
                   />
                   {errors.username && (
                     <small className="text-danger">
@@ -90,6 +96,9 @@ function register() {
                       {...field}
                       id="password"
                       placeholder="Password"
+                      onChange={(val) => {
+                        field.onChange(val);
+                      }}
                       type={showPassword ? "text" : "password"}
                     />
                     {errors.password && (

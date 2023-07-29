@@ -68,6 +68,14 @@ export class UserService {
     }
   }
 
+  login = async (req: Request, res: Response) => {
+    try {
+      
+    } catch (error) {
+      return this.resposneService.sent(res, 500, [])
+    }
+  }
+
   findAll() {
     return `This action returns all user`;
   }

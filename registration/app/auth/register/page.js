@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "react-feather";
 import authService from "@/services/auth.service";
 import { toast, ToastContainer } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
+import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 

@@ -1,16 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {Request, Response} from 'express';
+import { Request, Response } from 'express';
 
 @Controller('')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   *
+   * @param req
+   * @param res
+   * @returns
+   */
+
   @Post('register')
   async createUser(@Req() req: Request, @Res() res: Response) {
     return this.userService.createUser(req, res);
+  }
+
+  @Post('login')
+  async login(@Req() req: Request, @Res() res: Response) {
+    return this.userService.login(req, res);
   }
 
   @Get()
