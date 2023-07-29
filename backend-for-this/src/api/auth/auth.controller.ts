@@ -61,6 +61,7 @@ export class AuthController {
   async logout(@Req() req: Request, @Res() res: Response) {
     return this.authService.logout(req, res);
   }
+  
 
   /**
    * to refresh the token

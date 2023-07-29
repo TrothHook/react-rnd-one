@@ -16,10 +16,15 @@ module.exports = {
       user_name: {
         type: Sequelize.STRING(150),
         allowNull: false,
+        // unique: true,
       },
       password: {
         type: Sequelize.STRING,
         allowNull: false,
+      },
+      hashed_refresh_token: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
       role_id: {
         type: Sequelize.INTEGER,
@@ -29,6 +34,7 @@ module.exports = {
       email: {
         type: Sequelize.STRING,
         allowNull: false,
+        // unique: true,
       },
       temp_password: {
         type: Sequelize.TINYINT.UNSIGNED,
@@ -39,6 +45,16 @@ module.exports = {
       password_updated_datetime: {
         type: Sequelize.DATE,
         allowNull: true,
+      },
+      created_by: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: { model: { tableName: 'tbl_user_masters' }, key: 'id' },
+      },
+      update_by: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: { model: { tableName: 'tbl_user_masters' }, key: 'id' },
       },
       created_at: {
         type: Sequelize.DATE,

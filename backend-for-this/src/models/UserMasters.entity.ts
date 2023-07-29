@@ -9,8 +9,9 @@ import {
   Model,
   BelongsTo,
 } from 'sequelize-typescript';
-
 import { Role } from './RoleMasters.entity';
+
+
 
 @Table({
   tableName: 'tbl_user_masters',
@@ -38,6 +39,7 @@ export class User extends Model<User> {
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    // unique: true
   })
   user_name: string;
 
@@ -51,6 +53,7 @@ export class User extends Model<User> {
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    // unique: true
   })
   email: string;
 
@@ -59,6 +62,12 @@ export class User extends Model<User> {
     allowNull: false,
   })
   password: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  hashed_refresh_token: string;
 
   @Column({
     type: DataType.TINYINT.UNSIGNED,

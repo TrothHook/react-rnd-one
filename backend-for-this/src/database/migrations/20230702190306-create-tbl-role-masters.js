@@ -7,7 +7,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       role_name: {
         type: Sequelize.STRING(50),
@@ -28,10 +28,10 @@ module.exports = {
       deleted_at: {
         type: Sequelize.DATE,
         allowNull: true,
-      }
+      },
     });
   },
   async down(queryInterface, Sequelize) {
     return await queryInterface.dropTable('tbl_role_masters');
-  }
+  },
 };

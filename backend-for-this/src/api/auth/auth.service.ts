@@ -4,12 +4,12 @@ import { config } from 'dotenv';
 import { Request, Response } from 'express';
 import { ResponseService } from 'src/common-service/response.service';
 import { TokenPayload, Tokens } from './types';
-import { User } from 'src/models/user.entity';
 import { Op, Transaction, where } from 'sequelize';
 import { UserDto } from '../user/dto';
 import helpers from 'src/helpers';
 import { AuthDto } from './dto';
 import { token } from 'morgan';
+import { User } from 'src/models/UserMasters.entity';
 
 let env = config().parsed;
 
@@ -83,7 +83,7 @@ export class AuthService {
       // console.log('hashedRefreshTokens', hashedRefreshTokens);
 
       const updateHash = await User.update(
-        { hashedRefreshToken: hashedRefreshTokens },
+        { hashed_refresh_token: hashedRefreshTokens },
         { where: { id: newUser.id }, transaction },
       );
 
@@ -155,7 +155,7 @@ export class AuthService {
       );
 
       const updateHash = await User.update(
-        { hashedRefreshToken: hashedRefreshTokens },
+        { hashed_refresh_token: hashedRefreshTokens },
         { where: { id: user.id } },
       );
 
@@ -169,7 +169,8 @@ export class AuthService {
         'User successfully logged in',
       );
     } catch (error) {
-      return this.responseService.sent(res, 500, []);
+      console.log('error', error);
+      return this.responseService.sent(res, 500, error.message);
     }
   };
 
@@ -187,10 +188,15 @@ export class AuthService {
       let authToken: any = req.user;
       let userId: number = authToken.userId;
       await User.update(
-        { hashedRefreshToken: null },
-        { where: { id: userId, hashedRefreshToken: { [Op.ne]: null } } },
+        { hashed_refresh_token: null },
+        { where: { id: userId, hashed_refresh_token: { [Op.ne]: null } } },
       );
-      return this.responseService.sent(res, 200, req.user);
+      return this.responseService.sent(
+        res,
+        200,
+        [],
+        'User logged out successfully',
+      );
     } catch (error) {
       return this.responseService.sent(res, 500, []);
     }
@@ -206,7 +212,6 @@ export class AuthService {
 
   refreshToken = async (req: Request, res: Response) => {
     try {
-      
     } catch (error) {
       return this.responseService.sent(res, 500, []);
     }

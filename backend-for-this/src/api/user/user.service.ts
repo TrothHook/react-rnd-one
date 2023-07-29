@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ResponseService } from 'src/common-service/response.service';
 import { Request, Response } from 'express';
-import { User } from 'src/models/user.entity';
+import { User } from 'src/models/UserMasters.entity';
 
 @Injectable()
 export class UserService {
