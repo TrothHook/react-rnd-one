@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { RouterModule } from '@nestjs/core';
-import { UserModule } from './api/user/user.module'
-import { StoreService } from './common-service/store.service';
 import { ResponseService } from './common-service/response.service';
+import { UserModule } from './api/user/user.module';
+import { AuthModule } from './api/auth/auth.module';
 
 export const ROUTES = [
   {
@@ -17,7 +17,7 @@ export const ROUTES = [
 ];
 
 @Module({
-  imports: [RouterModule.register(ROUTES), UserModule],
-  providers: [ResponseService,StoreService],
+  imports: [RouterModule.register(ROUTES), UserModule, AuthModule],
+  providers: [ResponseService],
 })
 export class AppRoutingModule {}

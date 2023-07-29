@@ -1,13 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ResponseService } from 'src/common-service/response.service';
-import { Role } from 'src/models/RoleMasters.entity';
-import { User } from 'src/models/UserMasters.entity';
-import * as bcrypt from 'bcrypt';
 import { config } from 'dotenv';
 import { Request, Response } from 'express';
+import { ResponseService } from 'src/common-service/response.service';
+import { TokenPayload, Tokens } from './types';
+import { User } from 'src/models/user.entity';
+import { Op, Transaction, where } from 'sequelize';
+import { UserDto } from '../user/dto';
+import helpers from 'src/helpers';
+import { AuthDto } from './dto';
+import { token } from 'morgan';
 
-let env: any = config().parsed;
+let env = config().parsed;
 
 @Injectable()
 export class AuthService {
@@ -16,104 +20,195 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  /**
-   * validate user
-   * @author Barun Roy
-   * @param username
-   * @param password
-   * @returns user without the password and role id and role name as well
-   */
-  validateUser = async (username: string, password: string): Promise<any> => {
-    let filter: any = {};
-    filter = {
-      include: [
+  getTokens = async (payload: TokenPayload): Promise<Tokens> => {
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: 60 * 15,
+      secret: env['JWT_ACCESS'],
+    });
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      expiresIn: 60 * 60 * 24 * 7,
+      secret: env['JWT_REFRESH'],
+    });
+    return { access_tokens: accessToken, refresh_tokens: refreshToken };
+  };
+
+  signup = async (
+    transaction: Transaction,
+    dto: UserDto,
+    req: Request,
+    res: Response,
+  ): Promise<Tokens | void> => {
+    try {
+      let user_name: string = dto?.name.toLowerCase().split(' ').join('_');
+
+      let duplicateCheckfilterObject: object = {
+        attributes: ['id'],
+        where: { [Op.or]: [{ email: dto?.email }, { user_name }] },
+      };
+
+      let duplicateCheck: object = await User.findOne(
+        duplicateCheckfilterObject,
+      );
+      if (duplicateCheck) {
+        return this.responseService.sent(res, 409, [], 'User already exists!');
+      }
+
+      let hashedPassword: string = await helpers.hashData(dto?.password);
+
+      const newUser = await User.create(
         {
-          model: Role,
-          attributes: ['id', 'role_name'],
+          name: dto?.name,
+          user_name: user_name,
+          email: dto?.email,
+          password: hashedPassword,
+          role_id: 3,
+          temp_password: 1,
         },
-      ],
-      where: {
-        user_name: username,
-      },
-    };
-    let user = await User.findOne(filter);
-    let isMatch: any = false;
-    if (user) isMatch = await bcrypt.compare(password, user?.password);
-    if (user && isMatch) {
-      delete user.password;
-      return user;
-    } else {
-      return 401;
+        { transaction },
+      );
+
+      // console.log('newUser', JSON.parse(JSON.stringify(newUser)));
+
+      const token = await this.getTokens({
+        userId: newUser.id,
+        email: newUser.email,
+        roleId: newUser.role_id,
+      });
+      // console.log('token', token);
+
+      const hashedRefreshTokens = await helpers.updateRefreshTokenHash(
+        token.refresh_tokens,
+      );
+
+      // console.log('hashedRefreshTokens', hashedRefreshTokens);
+
+      const updateHash = await User.update(
+        { hashedRefreshToken: hashedRefreshTokens },
+        { where: { id: newUser.id }, transaction },
+      );
+
+      return this.responseService.sent(
+        res,
+        201,
+        token,
+        'User Successfully Registered',
+      );
+    } catch (error: any) {
+      // console.log(error);
+      // await transaction.rollback();
+      return this.responseService.sent(res, 500, [], error.message);
     }
   };
 
   /**
-   * access token generate
-   * @author Barun Roy
-   * @param user
-   * @returns the access token
-   */
-
-  accessToken: any = async (user: any) => {
-    return {
-      access_token: this.jwtService.signAsync(user, {
-        secret: env.JWT_SECRET,
-        expiresIn: 24 * 60 * 15,
-      }),
-    };
-  };
-
-  /**
-   * refresh token generate
-   * @author Barun Roy
-   * @param user
-   * @returns the refresh token
-   */
-  refreshToken: any = async (user: any) => {
-    let refresh_token = await this.jwtService.signAsync(user, {
-      secret: env.JWT_REFERSH_SECRET,
-      expiresIn: (24 * 60) & 15,
-    });
-    return refresh_token;
-  };
-
-  /**
-   * verify the access token
+   * user login/signin
    * @author Barun Roy
    * @param req
    * @param res
-   * @param token
-   * @returns after token verification, return the result
+   * @returns
    */
 
-  verifyAccessToken: any = async (
+  signin = async (
+    dto: AuthDto,
     req: Request,
     res: Response,
-    token: string,
-  ) => {
+  ): Promise<Tokens | void> => {
     try {
-      let verified: any = await this.jwtService.verifyAsync(token, {
-        secret: env.JWT_SECRET,
-        ignoreExpiration: false,
+      let whereCondition: any = {};
+
+      dto?.user_name && (whereCondition.user_name = dto.user_name);
+
+      let user = await User.findOne({
+        where: whereCondition,
+        attributes: ['id', 'email', 'role_id', 'password'],
       });
-      return this.responseService.sent(res, 200, verified);
+
+      if (
+        user &&
+        (await helpers.compareHashData(user?.password, dto?.password))
+      ) {
+        var token = await this.getTokens({
+          userId: user.id,
+          email: user.email,
+          roleId: user.role_id,
+        });
+      } else {
+        return this.responseService.sent(
+          res,
+          401,
+          [],
+          'Wrong credentials! Access denied',
+        );
+      }
+
+      user = JSON.parse(JSON.stringify(user));
+
+      delete user.password;
+
+      const data: any = {
+        user,
+        token,
+      };
+
+      const hashedRefreshTokens = await helpers.updateRefreshTokenHash(
+        token.refresh_tokens,
+      );
+
+      const updateHash = await User.update(
+        { hashedRefreshToken: hashedRefreshTokens },
+        { where: { id: user.id } },
+      );
+
+      return this.responseService.sent(
+        res,
+        200,
+        {
+          user,
+          token,
+        },
+        'User successfully logged in',
+      );
     } catch (error) {
-      throw UnauthorizedException;
+      return this.responseService.sent(res, 500, []);
     }
   };
 
   /**
-   * verify the refresh token
+   * user logout
    * @author Barun Roy
-   * @param token
-   * @returns object containing the payload iat and exp
+   * @param req
+   * @param res
+   * @returns
    */
 
-  verifyRefreshToken: object = async (token: string) => {
-    let verified: object = await this.jwtService.verifyAsync(token, {
-      secret: env.JWT_REFERSH_SECRET,
-      ignoreExpiration: false,
-    });
-    return verified;
+  logout = async (req: Request, res: Response) => {
+    try {
+      // console.log(req.user);
+      let authToken: any = req.user;
+      let userId: number = authToken.userId;
+      await User.update(
+        { hashedRefreshToken: null },
+        { where: { id: userId, hashedRefreshToken: { [Op.ne]: null } } },
+      );
+      return this.responseService.sent(res, 200, req.user);
+    } catch (error) {
+      return this.responseService.sent(res, 500, []);
+    }
+  };
+
+  /**
+   * will be used to refresh the access token to maintain loggedin state
+   * @author Barun Roy
+   * @param req
+   * @param res
+   * @returns
+   */
+
+  refreshToken = async (req: Request, res: Response) => {
+    try {
+      
+    } catch (error) {
+      return this.responseService.sent(res, 500, []);
+    }
   };
 }

@@ -1,20 +1,18 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { config } from 'dotenv';
-import { MODELS } from 'src/models';
-import { AppRoutingModule } from './app.routing.module';
-import { TransactionInterceptor } from './interceptors/transaction.interceptor';
-import { Sequelize } from 'sequelize-typescript';
-import { MailerModule } from '@nestjs-modules/mailer';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { UserModule } from './api/user/user.module';
 import { ResponseService } from './common-service/response.service';
-let _ENV = config().parsed;
+import { JwtService } from '@nestjs/jwt';
+import { Sequelize } from 'sequelize-typescript';
+import * as dotenv from 'dotenv';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { AppRoutingModule } from './app.routing.module';
+import { TransactionInterceptor } from './interceptors/transaction.interceptor';
+import { MODELS } from './models';
+// import { EnvironmentVariables } from './interfaces/app.module.interface';
 
-/**Sequelize connection*/
+let _ENV = dotenv.config().parsed;
 
 let CONNECTION: any = {
   dialect: _ENV['DB_DIALECT'],
@@ -47,30 +45,9 @@ let CONNECTION: any = {
   timezone: '+05:30',
 };
 
-let MAIL_MODULE = [
-  MailerModule.forRoot({
-    transport: {
-      host: 'smtp.mailtrap.io',
-      port: 2525,
-      auth: {
-        user: '72fb4631ad25ca',
-        pass: '106be0fed8ffa6',
-      },
-    },
-  }),
-];
-
-let STATIC_FILE_MODULE = [
-  ServeStaticModule.forRoot({
-    rootPath: join(__dirname, '..', 'assets'),
-  }),
-];
-
-/** MODULE Array */
-
 let MODULES = [SequelizeModule.forRoot(CONNECTION), AppRoutingModule];
 
-MODULES = [...MODULES, ...MAIL_MODULE, ...STATIC_FILE_MODULE];
+MODULES = [...MODULES];
 
 @Module({
   imports: MODULES,
