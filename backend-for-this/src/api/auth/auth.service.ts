@@ -158,6 +158,7 @@ export class AuthService {
         { hashed_refresh_token: hashedRefreshTokens },
         { where: { id: user.id } },
       );
+      delete token.refresh_tokens;
 
       return this.responseService.sent(
         res,

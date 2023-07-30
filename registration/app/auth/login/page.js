@@ -18,6 +18,11 @@ function register() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
+  history.pushState(null, null, location.href);
+  window.onpopstate = function (event) {
+    history.go(1);
+  };
+
   const {
     control,
     handleSubmit,
@@ -33,14 +38,15 @@ function register() {
   };
 
   const onSubmit = async (formData) => {
-    console.log("formData", formData);
     const data = await authService.signIn(formData);
-    // console.log('data', data?.data?.data)
     if (data?.status === 200) {
       toast.success(data?.data?.message);
       router.push("/dashboard");
       localStorage.setItem("authToken", JSON.stringify(data?.data?.data));
-      localStorage.isLoggedIn("isLoggedIn", true);
+      localStorage.setItem("isLoggedIn", true);
+    }
+    if (data?.response?.status === 401) {
+      toast.warning(data?.response?.data?.message);
     }
     if (data?.response?.status === 409) {
       toast.warning(data?.response?.data?.message);
