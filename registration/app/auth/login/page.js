@@ -33,10 +33,14 @@ function register() {
   };
 
   const onSubmit = async (formData) => {
-    const data = await authService.signUp(formData);
+    console.log("formData", formData);
+    const data = await authService.signIn(formData);
+    // console.log('data', data?.data?.data)
     if (data?.status === 200) {
       toast.success(data?.data?.message);
-      router.push("/auth/login");
+      router.push("/dashboard");
+      localStorage.setItem("authToken", JSON.stringify(data?.data?.data));
+      localStorage.isLoggedIn("isLoggedIn", true);
     }
     if (data?.response?.status === 409) {
       toast.warning(data?.response?.data?.message);
@@ -51,25 +55,25 @@ function register() {
       <div className="bg-white p-4 shadow rounded">
         <Form onSubmit={handleSubmit(onSubmit)}>
           <FormGroup>
-            <Label for="username">Username</Label>
+            <Label for="user_name">Username</Label>
             <Controller
               control={control}
-              name="username"
+              name="user_name"
               rules={{ required: "Username is required" }}
               render={({ field }) => (
                 <>
                   <Input
                     {...field}
-                    id="username"
+                    id="user_name"
                     placeholder="Username"
                     type="text"
                     onChange={(val) => {
                       field.onChange(val);
                     }}
                   />
-                  {errors.username && (
+                  {errors.user_name && (
                     <small className="text-danger">
-                      {errors.username.message}
+                      {errors.user_name.message}
                     </small>
                   )}
                 </>

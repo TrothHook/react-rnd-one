@@ -21,8 +21,23 @@ const signUp = async (postData) => {
   }
 };
 
+const signIn = async (postData) => {
+  try {
+    const response = await axios({
+      url: `${API_BASE_URL}/signin`,
+      data: postData,
+      method: "POST",
+      header: { "Content-Type": "application/json" },
+    });
+    return response;
+  } catch (error) {
+    return error;
+  }
+};
+
 const authService = {
   signUp,
+  signIn
 };
 
 export default authService;

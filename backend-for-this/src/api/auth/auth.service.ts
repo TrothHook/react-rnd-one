@@ -184,13 +184,13 @@ export class AuthService {
 
   logout = async (req: Request, res: Response) => {
     try {
-      // console.log(req.user);
       let authToken: any = req.user;
       let userId: number = authToken.userId;
       await User.update(
         { hashed_refresh_token: null },
         { where: { id: userId, hashed_refresh_token: { [Op.ne]: null } } },
       );
+      res.removeHeader('authorization');
       return this.responseService.sent(
         res,
         200,
